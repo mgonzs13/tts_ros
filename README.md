@@ -16,6 +16,20 @@ $ rosdep install --from-paths src --ignore-src -r -y
 $ colcon build
 ```
 
+## Usage
+
+To use this tool you have to run the tts_node. It has the following parameters:
+
+- chunk: Size of audio chunks to be sent to the audio player.
+- frame_id: Frame of for the tts.
+- mode: The tts model. You can check the available models with `tts --list_models`.
+- speaker_wav: The wav file to perform voice cloning.
+- device: The device to run the model same as in torch.
+
+```shell
+$ ros2 run tts_ros tts_node --ros-args -p chunk:=4096 -p frame_id:="your-frame" -p model:="your-model" -p speaker_wav:="/path/to/wav/file" device:="cpu/cuda"
+```
+
 ## Demos
 
 ```shell
