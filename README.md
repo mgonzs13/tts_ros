@@ -1,6 +1,6 @@
 # tts_ros
 
-This repositiory integrates the Python [TTS](https://pypi.org/project/TTS/) pacakge into ROS 2 using [audio_common](https://github.com/mgonzs13/audio_common).
+This repositiory integrates the Python [TTS](https://pypi.org/project/TTS/) (Text-to-Speech) pacakge into ROS 2 using [audio_common](https://github.com/mgonzs13/audio_common).
 
 ## Installation
 
