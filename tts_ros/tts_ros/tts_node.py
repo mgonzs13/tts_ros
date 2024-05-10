@@ -108,7 +108,7 @@ class AudioCapturerNode(Node):
             callback_group=ReentrantCallbackGroup()
         )
 
-        self.get_logger().info(f"Stream: {self.stream} {self.speaker_wav}")
+        self.get_logger().debug(f"Stream: {self.stream} {self.speaker_wav}")
 
         if self.stream and self.speaker_wav:
             self.get_logger().info(f"Streaming. Getting embeddings from {self.speaker_wav}")
@@ -228,41 +228,45 @@ class AudioCapturerNode(Node):
                 enable_text_splitting=True,
             )
             
-            for i, data in enumerate(chunks):
-                self.get_logger().debug(f"Streaming chunk number {i}")
+            for i, chunk_data in enumerate(chunks):
+                for j in range(0, len(chunk_data), self.chunk):
+                    data = chunk_data[j:j+self.chunk]
 
-                if not goal_handle.is_active:
-                    return TTS.Result()
+                    self.get_logger().debug(f"Streaming chunk number {i} subchunk {j}")
 
-                if goal_handle.is_cancel_requested:
-                    goal_handle.canceled()
-                    return TTS.Result()
-                
-                data = data.clone().detach().cpu().numpy()
-                data = data[None, : int(data.shape[0])]
-                data = np.clip(data, -1, 1)
-                data = (data * 32767).astype(np.int16)
+                    if not goal_handle.is_active:
+                        return TTS.Result()
 
-                audio_data_msg = data_to_msg(data.tobytes(), audio_format)
-                if audio_data_msg is None:
-                    self.get_logger().error(f"Format {audio_format} unknown")
-                    self._goal_handle.abort()
-                    return TTS.Result()
+                    if goal_handle.is_cancel_requested:
+                        goal_handle.canceled()
+                        return TTS.Result()
+                    
+                    data = data.clone().detach().cpu().numpy()
+                    data = data[None, : int(data.shape[0])]
+                    data = np.clip(data, -1, 1)
+                    data = (data * 32767).astype(np.int16)
 
-                msg = AudioStamped()
-                msg.header.frame_id = self.frame_id
-                msg.header.stamp = self.get_clock().now().to_msg()
-                msg.audio.audio_data = audio_data_msg
-                msg.audio.info.format = audio_format
-                msg.audio.info.channels = channels
-                msg.audio.info.chunk = self.chunk
-                msg.audio.info.rate = rate
+                    audio_data_msg = data_to_msg(data.tobytes(), audio_format)
+                    if audio_data_msg is None:
+                        self.get_logger().error(f"Format {audio_format} unknown")
+                        self._goal_handle.abort()
+                        return TTS.Result()
 
-                self.player_pub.publish(msg)
-                end_time = time.time()
-                self.get_logger().debug(f"Text to speech chunk {i} {end_time - start_time} seconds")
-                pub_rate.sleep()
+                    msg = AudioStamped()
+                    msg.header.frame_id = self.frame_id
+                    msg.header.stamp = self.get_clock().now().to_msg()
+                    msg.audio.audio_data = audio_data_msg
+                    msg.audio.info.format = audio_format
+                    msg.audio.info.channels = channels
+                    msg.audio.info.chunk = self.chunk
+                    msg.audio.info.rate = rate
 
+                    self.player_pub.publish(msg)
+                    end_time = time.time()
+                    self.get_logger().debug(f"Text to speech chunk {i} {end_time - start_time} seconds")
+                    pub_rate.sleep()
+
+        pub_rate.sleep()
         end_time = time.time()
         self.get_logger().debug(f"Text to speech took {end_time - start_time} seconds")
 
