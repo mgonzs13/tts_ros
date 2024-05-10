@@ -24,10 +24,17 @@ To use this tool you have to run the tts_node. It has the following parameters:
 - frame_id: Frame of for the tts.
 - mode: The tts model. You can check the available models with `tts --list_models`.
 - speaker_wav: The wav file to perform voice cloning.
+- speaker: Which speaker voice to use for multi-speaker models. Check with `tts --model_name <model> --list_language_idx`.
 - device: The device to run the model same as in torch.
 
+### Format
 ```shell
-$ ros2 run tts_ros tts_node --ros-args -p chunk:=4096 -p frame_id:="your-frame" -p model:="your-model" -p speaker_wav:="/path/to/wav/file" device:="cpu/cuda"
+$ ros2 run tts_ros tts_node --ros-args -p chunk:=4096 -p frame_id:="your-frame" -p model:="your-model" -p speaker_wav:="/path/to/wav/file" -p device:="cpu/cuda"
+```
+
+### Example
+```shell
+$ ros2 run tts_ros tts_node --ros-args -p chunk:=4096 -p frame_id:="base_link" -p model:="tts_models/multilingual/multi-dataset/xtts_v2" -p speaker:="Ana Florence" -p device:="cuda"
 ```
 
 ## Demos

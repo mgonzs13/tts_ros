@@ -55,6 +55,7 @@ class AudioCapturerNode(Node):
 
             ("model", "tts_models/en/ljspeech/vits"),
             ("speaker_wav", ""),
+            ("speaker", ""),
             ("device", "cpu")
         ])
 
@@ -67,6 +68,8 @@ class AudioCapturerNode(Node):
             "model").get_parameter_value().string_value
         self.speaker_wav = self.get_parameter(
             "speaker_wav").get_parameter_value().string_value
+        self.speaker = self.get_parameter(
+            "speaker").get_parameter_value().string_value
         self.device = self.get_parameter(
             "device").get_parameter_value().string_value
 
@@ -78,6 +81,9 @@ class AudioCapturerNode(Node):
             )
         ):
             self.speaker_wav = None
+
+        if not self.speaker:
+            self.speaker = None
 
         self.tts = TtsModel(self.model).to(self.device)
 
@@ -132,6 +138,7 @@ class AudioCapturerNode(Node):
         self.tts.tts_to_file(
             text,
             speaker_wav=self.speaker_wav,
+            speaker=self.speaker,
             language=language,
             file_path=audio_file.name
         )
