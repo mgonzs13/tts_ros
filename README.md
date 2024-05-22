@@ -31,13 +31,7 @@ To use this tool you have to run the tts_node. It has the following parameters:
 ### Format
 
 ```shell
-$ ros2 run tts_ros tts_node --ros-args -p chunk:=4096 -p frame_id:="your-frame" -p model:="your-model" -p device:="cpu/cuda" -p speaker_wav:="/path/to/wav/file" -p speaker:="speaker" -p stream:=False
-```
-
-### Example
-
-```shell
-$ ros2 run tts_ros tts_node --ros-args -p chunk:=4096 -p frame_id:="base_link" -p model:="tts_models/multilingual/multi-dataset/xtts_v2" -p speaker:="Ana Florence" -p device:="cuda"
+$ ros2 run tts_ros tts_node --ros-args -p chunk:=4096 -p frame_id:="your-frame" -p model:="your-model" -p device:="cpu/cuda" -p speaker_wav:="/path/to/wav/file" -p stream:=False
 ```
 
 ## Demos
