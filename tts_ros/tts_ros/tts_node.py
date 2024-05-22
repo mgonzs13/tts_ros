@@ -55,9 +55,10 @@ class AudioCapturerNode(Node):
             ("frame_id", ""),
 
             ("model", "tts_models/en/ljspeech/vits"),
+            ("device", "cpu"),
+
             ("speaker_wav", ""),
             ("speaker", ""),
-            ("device", "cpu"),
             ("stream", False),
         ])
 
@@ -77,6 +78,8 @@ class AudioCapturerNode(Node):
         self.stream = self.get_parameter(
             "stream").get_parameter_value().bool_value
 
+        self.tts = TtsModel(self.model).to(self.device)
+
         if (
             not self.speaker_wav or
             not (
@@ -86,10 +89,8 @@ class AudioCapturerNode(Node):
         ):
             self.speaker_wav = None
 
-        if not self.speaker:
+        if not self.speaker or not self.tts.is_multi_speaker:
             self.speaker = None
-
-        self.tts = TtsModel(self.model).to(self.device)
 
         self.player_pub = self.create_publisher(
             AudioStamped, "audio", qos_profile_sensor_data)
@@ -111,11 +112,12 @@ class AudioCapturerNode(Node):
         self.get_logger().debug(f"Stream: {self.stream} {self.speaker_wav}")
 
         if self.stream and self.speaker_wav:
-            self.get_logger().info(f"Streaming. Getting embeddings from {self.speaker_wav}")
-            self.gpt_cond_latent, self.speaker_embedding = self.tts.synthesizer.tts_model.get_conditioning_latents(audio_path=[self.speaker_wav])
+            self.get_logger().info(
+                f"Streaming. Getting embeddings from {self.speaker_wav}")
+            self.gpt_cond_latent, self.speaker_embedding = self.tts.synthesizer.tts_model.get_conditioning_latents(
+                audio_path=[self.speaker_wav])
         else:
             self.stream = False
-
 
         self.get_logger().info("TTS node started")
 
@@ -141,7 +143,7 @@ class AudioCapturerNode(Node):
         request: TTS.Goal = goal_handle.request
 
         start_time = time.time()
-        
+
         text = request.text
         language = request.language
 
@@ -219,7 +221,7 @@ class AudioCapturerNode(Node):
                 speaker_wav=self.speaker_wav,
                 speaker=self.speaker,
                 language=language,
-                gpt_cond_latent=self.gpt_cond_latent, 
+                gpt_cond_latent=self.gpt_cond_latent,
                 speaker_embedding=self.speaker_embedding,
                 stream_chunk_size=self.chunk,
                 temperature=0.65,
@@ -227,12 +229,13 @@ class AudioCapturerNode(Node):
                 speed=1.0,
                 enable_text_splitting=True,
             )
-            
+
             for i, chunk_data in enumerate(chunks):
                 for j in range(0, len(chunk_data), self.chunk):
                     data = chunk_data[j:j+self.chunk]
 
-                    self.get_logger().debug(f"Streaming chunk number {i} subchunk {j}")
+                    self.get_logger().debug(
+                        f"Streaming chunk number {i} subchunk {j}")
 
                     if not goal_handle.is_active:
                         return TTS.Result()
@@ -240,7 +243,7 @@ class AudioCapturerNode(Node):
                     if goal_handle.is_cancel_requested:
                         goal_handle.canceled()
                         return TTS.Result()
-                    
+
                     data = data.clone().detach().cpu().numpy()
                     data = data[None, : int(data.shape[0])]
                     data = np.clip(data, -1, 1)
@@ -248,7 +251,8 @@ class AudioCapturerNode(Node):
 
                     audio_data_msg = data_to_msg(data.tobytes(), audio_format)
                     if audio_data_msg is None:
-                        self.get_logger().error(f"Format {audio_format} unknown")
+                        self.get_logger().error(
+                            f"Format {audio_format} unknown")
                         self._goal_handle.abort()
                         return TTS.Result()
 
@@ -263,13 +267,14 @@ class AudioCapturerNode(Node):
 
                     self.player_pub.publish(msg)
                     end_time = time.time()
-                    self.get_logger().debug(f"Text to speech chunk {i} {end_time - start_time} seconds")
+                    self.get_logger().debug(
+                        f"Text to speech chunk {i} {end_time - start_time} seconds")
                     pub_rate.sleep()
 
         pub_rate.sleep()
         end_time = time.time()
-        self.get_logger().debug(f"Text to speech took {end_time - start_time} seconds")
-
+        self.get_logger().debug(
+            f"Text to speech took {end_time - start_time} seconds")
 
         goal_handle.succeed()
         return TTS.Result()
