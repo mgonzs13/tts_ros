@@ -55,6 +55,10 @@ class AudioCapturerNode(Node):
             ("frame_id", ""),
 
             ("model", "tts_models/en/ljspeech/vits"),
+            ("model_path", ""),
+            ("config_path", ""),
+            ("vocoder_path", ""),
+            ("vocoder_config_path", ""),
             ("device", "cpu"),
 
             ("speaker_wav", ""),
@@ -67,8 +71,17 @@ class AudioCapturerNode(Node):
         self.frame_id = self.get_parameter(
             "frame_id").get_parameter_value().string_value
 
-        self.model = self.get_parameter(
+        model = self.get_parameter(
             "model").get_parameter_value().string_value
+        model_path = self.get_parameter(
+            "model_path").get_parameter_value().string_value
+        config_path = self.get_parameter(
+            "config_path").get_parameter_value().string_value
+        vocoder_path = self.get_parameter(
+            "vocoder_path").get_parameter_value().string_value
+        vocoder_config_path = self.get_parameter(
+            "vocoder_config_path").get_parameter_value().string_value
+
         self.speaker_wav = self.get_parameter(
             "speaker_wav").get_parameter_value().string_value
         self.speaker = self.get_parameter(
@@ -78,7 +91,13 @@ class AudioCapturerNode(Node):
         self.stream = self.get_parameter(
             "stream").get_parameter_value().bool_value
 
-        self.tts = TtsModel(self.model).to(self.device)
+        self.tts = TtsModel(
+            model_name=model,
+            model_path=model_path,
+            config_path=config_path,
+            vocoder_path=vocoder_path,
+            vocoder_config_path=vocoder_config_path
+        ).to(self.device)
 
         if (
             not self.speaker_wav or

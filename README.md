@@ -20,13 +20,17 @@ $ colcon build
 
 To use this tool you have to run the tts_node. It has the following parameters:
 
-- chunk: Size of audio chunks to be sent to the audio player.
-- frame_id: Frame of for the tts.
-- model: The tts model. You can check the available models with `tts --list_models`.
-- device: The device to run the model same as in torch.
-- speaker_wav: The wav file to perform voice cloning.
-- speaker: Which speaker voice to use for multi-speaker models. Check with `tts --model_name <model> --list_language_idx`.
-- stream: Whether to stream the audio data.
+- `chunk`: Size of audio chunks to be sent to the audio player.
+- `frame_id`: Frame of for the tts.
+- `model`: The tts model. You can check the available models with `tts --list_models`.
+- `model_path`: Path to a local model file.
+- `config_path`: Path to a config file.
+- `vocoder_path`: Path to a vocoder model file.
+- `vocoder_config_path`: Path to a config file.
+- `device`: The device to run the model same as in torch.
+- `speaker_wav`: The wav file to perform voice cloning.
+- `speaker`: Which speaker voice to use for multi-speaker models. Check with `tts --model_name <model> --list_language_idx`.
+- `stream`: Whether to stream the audio data.
 
 ### Format
 
