@@ -29,8 +29,8 @@ import wave
 import pyaudio
 import tempfile
 import threading
-from TTS.api import TTS as TtsModel
 import numpy as np
+from TTS.api import TTS as TtsModel
 
 import rclpy
 from rclpy.node import Node
@@ -111,7 +111,8 @@ class AudioCapturerNode(Node):
         if not self.speaker or not self.tts.is_multi_speaker:
             self.speaker = None
 
-        self.player_pub = self.create_publisher(
+        # publish audio data
+        self.__player_pub = self.create_publisher(
             AudioStamped, "audio", qos_profile_sensor_data)
 
         # action server
@@ -157,6 +158,29 @@ class AudioCapturerNode(Node):
     def cancel_callback(self, goal_handle: ServerGoalHandle) -> None:
         return CancelResponse.ACCEPT
 
+    def _pub_audio_data(
+        self,
+        data: bytes,
+        audio_format: int,
+        channels: int,
+        rate: int
+    ) -> None:
+
+        audio_msg = data_to_msg(data, audio_format)
+        if audio_msg is None:
+            return False
+
+        msg = AudioStamped()
+        msg.header.frame_id = self.frame_id
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.audio = audio_msg
+        msg.audio.info.channels = channels
+        msg.audio.info.chunk = self.chunk
+        msg.audio.info.rate = rate
+
+        self.__player_pub.publish(msg)
+        return True
+
     def execute_callback(self, goal_handle: ServerGoalHandle) -> TTS.Result:
 
         request: TTS.Goal = goal_handle.request
@@ -170,7 +194,7 @@ class AudioCapturerNode(Node):
             language = None
 
         if not self.stream:
-            # create audio file
+            # create an audio file
             audio_file = tempfile.NamedTemporaryFile(mode="w+")
             self.tts.tts_to_file(
                 text,
@@ -202,21 +226,14 @@ class AudioCapturerNode(Node):
                     goal_handle.canceled()
                     return TTS.Result()
 
-                audio_msg = data_to_msg(data, audio_format)
-                if audio_msg is None:
+                if not self._pub_audio_data(
+                    data, audio_format,
+                    wf.getnchannels(),
+                    wf.getframerate()
+                ):
                     self.get_logger().error(f"Format {audio_format} unknown")
                     self._goal_handle.abort()
                     return TTS.Result()
-
-                msg = AudioStamped()
-                msg.header.frame_id = self.frame_id
-                msg.header.stamp = self.get_clock().now().to_msg()
-                msg.audio = audio_msg
-                msg.audio.info.channels = wf.getnchannels()
-                msg.audio.info.chunk = self.chunk
-                msg.audio.info.rate = wf.getframerate()
-
-                self.player_pub.publish(msg)
 
                 data = wf.readframes(self.chunk)
 
@@ -224,16 +241,14 @@ class AudioCapturerNode(Node):
             # Stream chunks
             # These values might be specific to the model?
             audio_format = pyaudio.paInt16
-            # audio_format = pyaudio.paFloat32
-            rate = 24000
             channels = 1
+            rate = 24000
             frequency = rate / self.chunk
             pub_rate = self.create_rate(frequency)
 
             self.get_logger().debug(f"Streaming chunks")
 
             # TODO: TTS/tts/layers/xtts/stream_generator.py:138: UserWarning: You have modified the pretrained model configuration to control generation. This is a deprecated strategy to control generation and will be removed soon, in a future version. Please use a generation configuration file (see https://huggingface.co/docs/transformers/main_classes/text_generation)
-
             chunks = self.tts.synthesizer.tts_model.inference_stream(
                 text,
                 speaker_wav=self.speaker_wav,
@@ -267,23 +282,12 @@ class AudioCapturerNode(Node):
                     data = np.clip(data, -1, 1)
                     data = (data * 32767).astype(np.int16)
 
-                    audio_data_msg = data_to_msg(data.tobytes(), audio_format)
-                    if audio_data_msg is None:
+                    if not self._pub_audio_data(data.tobytes(), audio_format, channels, rate):
                         self.get_logger().error(
                             f"Format {audio_format} unknown")
                         self._goal_handle.abort()
                         return TTS.Result()
 
-                    msg = AudioStamped()
-                    msg.header.frame_id = self.frame_id
-                    msg.header.stamp = self.get_clock().now().to_msg()
-                    msg.audio.audio_data = audio_data_msg
-                    msg.audio.info.format = audio_format
-                    msg.audio.info.channels = channels
-                    msg.audio.info.chunk = self.chunk
-                    msg.audio.info.rate = rate
-
-                    self.player_pub.publish(msg)
                     end_time = time.time()
                     self.get_logger().debug(
                         f"Text to speech chunk {i} {end_time - start_time} seconds")
