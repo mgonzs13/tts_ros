@@ -164,7 +164,7 @@ class AudioCapturerNode(Node):
         audio_format: int,
         channels: int,
         rate: int
-    ) -> None:
+    ) -> bool:
 
         audio_msg = data_to_msg(data, audio_format)
         if audio_msg is None:
@@ -184,9 +184,6 @@ class AudioCapturerNode(Node):
     def execute_callback(self, goal_handle: ServerGoalHandle) -> TTS.Result:
 
         request: TTS.Goal = goal_handle.request
-
-        start_time = time.time()
-
         text = request.text
         language = request.language
 
@@ -217,7 +214,6 @@ class AudioCapturerNode(Node):
             data = wf.readframes(self.chunk)
 
             while data:
-                pub_rate.sleep()
 
                 if not goal_handle.is_active:
                     return TTS.Result()
@@ -235,6 +231,7 @@ class AudioCapturerNode(Node):
                     self._goal_handle.abort()
                     return TTS.Result()
 
+                pub_rate.sleep()
                 data = wf.readframes(self.chunk)
 
         else:
@@ -288,15 +285,7 @@ class AudioCapturerNode(Node):
                         self._goal_handle.abort()
                         return TTS.Result()
 
-                    end_time = time.time()
-                    self.get_logger().debug(
-                        f"Text to speech chunk {i} {end_time - start_time} seconds")
                     pub_rate.sleep()
-
-        pub_rate.sleep()
-        end_time = time.time()
-        self.get_logger().debug(
-            f"Text to speech took {end_time - start_time} seconds")
 
         goal_handle.succeed()
         return TTS.Result()
