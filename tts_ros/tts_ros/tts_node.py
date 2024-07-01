@@ -24,7 +24,6 @@
 
 
 import os
-import time
 import wave
 import pyaudio
 import tempfile
@@ -158,34 +157,16 @@ class AudioCapturerNode(Node):
     def cancel_callback(self, goal_handle: ServerGoalHandle) -> None:
         return CancelResponse.ACCEPT
 
-    def _pub_audio_data(
-        self,
-        data: bytes,
-        audio_format: int,
-        channels: int,
-        rate: int
-    ) -> bool:
-
-        audio_msg = data_to_msg(data, audio_format)
-        if audio_msg is None:
-            return False
-
-        msg = AudioStamped()
-        msg.header.frame_id = self.frame_id
-        msg.header.stamp = self.get_clock().now().to_msg()
-        msg.audio = audio_msg
-        msg.audio.info.channels = channels
-        msg.audio.info.chunk = self.chunk
-        msg.audio.info.rate = rate
-
-        self.__player_pub.publish(msg)
-        return True
-
     def execute_callback(self, goal_handle: ServerGoalHandle) -> TTS.Result:
 
         request: TTS.Goal = goal_handle.request
         text = request.text
         language = request.language
+
+        # Stream values, might be specific to the model?
+        audio_format = pyaudio.paInt16
+        channels = 1
+        rate = 24000
 
         if not self.tts.is_multi_lingual:
             language = None
@@ -201,50 +182,25 @@ class AudioCapturerNode(Node):
                 file_path=audio_file.name
             )
 
-            # pub audio
+            # read audio chunks
             audio_file.seek(0)
             wf = wave.open(audio_file.name, "rb")
             audio_file.close()
+
             audio_format = pyaudio.get_format_from_width(wf.getsampwidth())
+            channels = wf.getnchannels()
+            rate = wf.getframerate()
 
-            frequency = wf.getframerate() / self.chunk
-            pub_rate = self.create_rate(frequency)
+            def read_wav_chunks():
+                while True:
+                    frames = wf.readframes(self.chunk)
+                    if not frames:
+                        break
+                    yield frames
 
-            # send audio data
-            data = wf.readframes(self.chunk)
-
-            while data:
-
-                if not goal_handle.is_active:
-                    return TTS.Result()
-
-                if goal_handle.is_cancel_requested:
-                    goal_handle.canceled()
-                    return TTS.Result()
-
-                if not self._pub_audio_data(
-                    data, audio_format,
-                    wf.getnchannels(),
-                    wf.getframerate()
-                ):
-                    self.get_logger().error(f"Format {audio_format} unknown")
-                    self._goal_handle.abort()
-                    return TTS.Result()
-
-                pub_rate.sleep()
-                data = wf.readframes(self.chunk)
+            chunks = read_wav_chunks()
 
         else:
-            # Stream chunks
-            # These values might be specific to the model?
-            audio_format = pyaudio.paInt16
-            channels = 1
-            rate = 24000
-            frequency = rate / self.chunk
-            pub_rate = self.create_rate(frequency)
-
-            self.get_logger().debug(f"Streaming chunks")
-
             # TODO: TTS/tts/layers/xtts/stream_generator.py:138: UserWarning: You have modified the pretrained model configuration to control generation. This is a deprecated strategy to control generation and will be removed soon, in a future version. Please use a generation configuration file (see https://huggingface.co/docs/transformers/main_classes/text_generation)
             chunks = self.tts.synthesizer.tts_model.inference_stream(
                 text,
@@ -260,39 +216,56 @@ class AudioCapturerNode(Node):
                 enable_text_splitting=True,
             )
 
-            for i, chunk_data in enumerate(chunks):
-                for j in range(0, len(chunk_data), self.chunk):
+        # pub audio chunks
+        frequency = rate / self.chunk
+        pub_rate = self.create_rate(frequency)
+
+        for _, chunk_data in enumerate(chunks):
+            for j in range(0, len(chunk_data), self.chunk):
+
+                if self.stream:
                     data = chunk_data[j:j+self.chunk]
-
-                    self.get_logger().debug(
-                        f"Streaming chunk number {i} subchunk {j}")
-
-                    if not goal_handle.is_active:
-                        return TTS.Result()
-
-                    if goal_handle.is_cancel_requested:
-                        goal_handle.canceled()
-                        return TTS.Result()
-
                     data = data.clone().detach().cpu().numpy()
                     data = data[None, : int(data.shape[0])]
                     data = np.clip(data, -1, 1)
                     data = (data * 32767).astype(np.int16)
 
-                    if not self._pub_audio_data(data.tobytes(), audio_format, channels, rate):
-                        self.get_logger().error(
-                            f"Format {audio_format} unknown")
-                        self._goal_handle.abort()
-                        return TTS.Result()
+                else:
+                    data = chunk_data
 
-                    pub_rate.sleep()
+                audio_msg = data_to_msg(data, audio_format)
+                if audio_msg is None:
+                    self.get_logger().error(f"Format {audio_format} unknown")
+                    self._goal_handle.abort()
+                    return TTS.Result()
+
+                msg = AudioStamped()
+                msg.header.frame_id = self.frame_id
+                msg.header.stamp = self.get_clock().now().to_msg()
+                msg.audio = audio_msg
+                msg.audio.info.channels = channels
+                msg.audio.info.chunk = self.chunk
+                msg.audio.info.rate = rate
+
+                if not goal_handle.is_active:
+                    return TTS.Result()
+
+                if goal_handle.is_cancel_requested:
+                    goal_handle.canceled()
+                    return TTS.Result()
+
+                self.__player_pub.publish(msg)
+                pub_rate.sleep()
+
+                if not self.stream:
+                    break
 
         goal_handle.succeed()
         return TTS.Result()
 
 
-def main(args=None):
-    rclpy.init(args=args)
+def main():
+    rclpy.init()
     node = AudioCapturerNode()
     executor = MultiThreadedExecutor()
     rclpy.spin(node, executor=executor)
