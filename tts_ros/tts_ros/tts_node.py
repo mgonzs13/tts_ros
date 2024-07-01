@@ -159,6 +159,11 @@ class AudioCapturerNode(Node):
         text = request.text
         language = request.language
 
+        # check text
+        if not text.strip():
+            goal_handle.succeed()
+            return TTS.Result()
+
         # Stream values, might be specific to the model?
         audio_format = pyaudio.paInt16
         channels = 1
@@ -169,7 +174,7 @@ class AudioCapturerNode(Node):
 
         # generate the audio from text
         self._tts_lock.acquire()
-        self.get_logger().info(f"Generating audio for '{text}'")
+        self.get_logger().info("Generating Audio")
 
         if not self.stream:
             # create an audio file
@@ -220,7 +225,7 @@ class AudioCapturerNode(Node):
         # pub audio chunks
         try:
             self._pub_lock.acquire()
-            self.get_logger().info(f"Publishing audio for '{text}'")
+            self.get_logger().info("Publishing Audio")
             frequency = rate / self.chunk
             pub_rate = self.create_rate(frequency)
 
