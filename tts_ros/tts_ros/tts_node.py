@@ -27,7 +27,6 @@ import os
 import wave
 import pyaudio
 import tempfile
-import threading
 import numpy as np
 from TTS.api import TTS as TtsModel
 
@@ -42,6 +41,7 @@ from rclpy.executors import MultiThreadedExecutor
 from audio_common_msgs.msg import AudioStamped
 from audio_common_msgs.action import TTS
 from audio_common.utils import data_to_msg
+from tts_ros.ordered_lock import OrderedLock
 
 
 class AudioCapturerNode(Node):
@@ -111,12 +111,12 @@ class AudioCapturerNode(Node):
             self.speaker = None
 
         # publish audio data
+        self._tts_lock = OrderedLock()
+        self._pub_lock = OrderedLock()
         self.__player_pub = self.create_publisher(
             AudioStamped, "audio", qos_profile_sensor_data)
 
         # action server
-        self._goal_handle = None
-        self._goal_lock = threading.Lock()
         self._action_server = ActionServer(
             self,
             TTS,
@@ -148,10 +148,6 @@ class AudioCapturerNode(Node):
         return GoalResponse.ACCEPT
 
     def handle_accepted_callback(self, goal_handle: ServerGoalHandle) -> None:
-        with self._goal_lock:
-            if self._goal_handle is not None and self._goal_handle.is_active:
-                self._goal_handle.abort()
-            self._goal_handle = goal_handle
         goal_handle.execute()
 
     def cancel_callback(self, goal_handle: ServerGoalHandle) -> None:
@@ -170,6 +166,10 @@ class AudioCapturerNode(Node):
 
         if not self.tts.is_multi_lingual:
             language = None
+
+        # generate the audio from text
+        self._tts_lock.acquire()
+        self.get_logger().info(f"Generating audio for '{text}'")
 
         if not self.stream:
             # create an audio file
@@ -215,53 +215,61 @@ class AudioCapturerNode(Node):
                 speed=1.0,
                 enable_text_splitting=True,
             )
+        self._tts_lock.release()
 
         # pub audio chunks
-        frequency = rate / self.chunk
-        pub_rate = self.create_rate(frequency)
+        try:
+            self._pub_lock.acquire()
+            self.get_logger().info(f"Publishing audio for '{text}'")
+            frequency = rate / self.chunk
+            pub_rate = self.create_rate(frequency)
 
-        for _, chunk_data in enumerate(chunks):
-            for j in range(0, len(chunk_data), self.chunk):
+            for _, chunk_data in enumerate(chunks):
+                for j in range(0, len(chunk_data), self.chunk):
 
-                if self.stream:
-                    data = chunk_data[j:j+self.chunk]
-                    data = data.clone().detach().cpu().numpy()
-                    data = data[None, : int(data.shape[0])]
-                    data = np.clip(data, -1, 1)
-                    data = (data * 32767).astype(np.int16)
+                    if self.stream:
+                        data = chunk_data[j:j+self.chunk]
+                        data = data.clone().detach().cpu().numpy()
+                        data = data[None, : int(data.shape[0])]
+                        data = np.clip(data, -1, 1)
+                        data = (data * 32767).astype(np.int16)
 
-                else:
-                    data = chunk_data
+                    else:
+                        data = chunk_data
 
-                audio_msg = data_to_msg(data, audio_format)
-                if audio_msg is None:
-                    self.get_logger().error(f"Format {audio_format} unknown")
-                    self._goal_handle.abort()
-                    return TTS.Result()
+                    audio_msg = data_to_msg(data, audio_format)
+                    if audio_msg is None:
+                        self.get_logger().error(
+                            f"Format {audio_format} unknown")
+                        self._goal_handle.abort()
+                        return TTS.Result()
 
-                msg = AudioStamped()
-                msg.header.frame_id = self.frame_id
-                msg.header.stamp = self.get_clock().now().to_msg()
-                msg.audio = audio_msg
-                msg.audio.info.channels = channels
-                msg.audio.info.chunk = self.chunk
-                msg.audio.info.rate = rate
+                    msg = AudioStamped()
+                    msg.header.frame_id = self.frame_id
+                    msg.header.stamp = self.get_clock().now().to_msg()
+                    msg.audio = audio_msg
+                    msg.audio.info.channels = channels
+                    msg.audio.info.chunk = self.chunk
+                    msg.audio.info.rate = rate
 
-                if not goal_handle.is_active:
-                    return TTS.Result()
+                    if not goal_handle.is_active:
+                        return TTS.Result()
 
-                if goal_handle.is_cancel_requested:
-                    goal_handle.canceled()
-                    return TTS.Result()
+                    if goal_handle.is_cancel_requested:
+                        goal_handle.canceled()
+                        return TTS.Result()
 
-                self.__player_pub.publish(msg)
-                pub_rate.sleep()
+                    self.__player_pub.publish(msg)
+                    pub_rate.sleep()
 
-                if not self.stream:
-                    break
+                    if not self.stream:
+                        break
 
-        goal_handle.succeed()
-        return TTS.Result()
+            goal_handle.succeed()
+            return TTS.Result()
+
+        finally:
+            self._pub_lock.release()
 
 
 def main():
