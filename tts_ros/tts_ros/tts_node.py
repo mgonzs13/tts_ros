@@ -270,8 +270,10 @@ class AudioCapturerNode(Node):
                     if not self.stream:
                         break
 
+            result = TTS.Result()
+            result.text = text
             goal_handle.succeed()
-            return TTS.Result()
+            return result
 
         finally:
             self._pub_lock.release()
