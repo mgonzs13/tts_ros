@@ -25,6 +25,7 @@
 
 import os
 import wave
+import time
 import pyaudio
 import tempfile
 import numpy as np
@@ -227,7 +228,6 @@ class AudioCapturerNode(Node):
             self._pub_lock.acquire()
             self.get_logger().info("Publishing Audio")
             frequency = rate / self.chunk
-            pub_rate = self.create_rate(frequency)
 
             for _, chunk_data in enumerate(chunks):
                 for j in range(0, len(chunk_data), self.chunk):
@@ -265,7 +265,7 @@ class AudioCapturerNode(Node):
                         return TTS.Result()
 
                     self.__player_pub.publish(msg)
-                    pub_rate.sleep()
+                    time.sleep(1.0 / frequency)
 
                     if not self.stream:
                         break
