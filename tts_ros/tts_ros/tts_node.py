@@ -25,9 +25,10 @@
 
 import os
 import wave
-import time
 import pyaudio
 import tempfile
+import threading
+import collections
 import numpy as np
 from TTS.api import TTS as TtsModel
 
@@ -42,7 +43,6 @@ from rclpy.executors import MultiThreadedExecutor
 from audio_common_msgs.msg import AudioStamped
 from audio_common_msgs.action import TTS
 from audio_common.utils import data_to_msg
-from tts_ros.ordered_lock import OrderedLock
 
 
 class AudioCapturerNode(Node):
@@ -111,9 +111,14 @@ class AudioCapturerNode(Node):
         if not self.speaker or not self.tts.is_multi_speaker:
             self.speaker = None
 
+        # goal queue
+        self._goal_queue = collections.deque()
+        self._goal_queue_lock = threading.Lock()
+        self._current_goal = None
+
         # publish audio data
-        self._tts_lock = OrderedLock()
-        self._pub_lock = OrderedLock()
+        self._pub_rate = None
+        self._pub_lock = threading.Lock()
         self.__player_pub = self.create_publisher(
             AudioStamped, "audio", qos_profile_sensor_data)
 
@@ -149,7 +154,12 @@ class AudioCapturerNode(Node):
         return GoalResponse.ACCEPT
 
     def handle_accepted_callback(self, goal_handle: ServerGoalHandle) -> None:
-        goal_handle.execute()
+        with self._goal_queue_lock:
+            if self._current_goal is not None:
+                self._goal_queue.append(goal_handle)
+            else:
+                self._current_goal = goal_handle
+                self._current_goal.execute()
 
     def cancel_callback(self, goal_handle: ServerGoalHandle) -> None:
         return CancelResponse.ACCEPT
@@ -174,7 +184,6 @@ class AudioCapturerNode(Node):
             language = None
 
         # generate the audio from text
-        self._tts_lock.acquire()
         self.get_logger().info("Generating Audio")
 
         try:
@@ -225,16 +234,18 @@ class AudioCapturerNode(Node):
 
         except:
             goal_handle.abort()
+            self.run_next_goal()
             return TTS.Result()
 
-        finally:
-            self._tts_lock.release()
-
         # pub audio chunks
-        try:
-            self._pub_lock.acquire()
+        with self._pub_lock:
+            self.run_next_goal()
+
             self.get_logger().info("Publishing Audio")
             frequency = rate / self.chunk
+
+            if self._pub_rate is None:
+                self._pub_rate = self.create_rate(frequency)
 
             for _, chunk_data in enumerate(chunks):
                 for j in range(0, len(chunk_data), self.chunk):
@@ -272,7 +283,7 @@ class AudioCapturerNode(Node):
                         return TTS.Result()
 
                     self.__player_pub.publish(msg)
-                    time.sleep(1.0 / frequency)
+                    self._pub_rate.sleep()
 
                     if not self.stream:
                         break
@@ -282,8 +293,17 @@ class AudioCapturerNode(Node):
             goal_handle.succeed()
             return result
 
-        finally:
-            self._pub_lock.release()
+    def run_next_goal(self) -> bool:
+        with self._goal_queue_lock:
+            try:
+                self._current_goal = self._goal_queue.popleft()
+                t = threading.Thread(target=self._current_goal.execute)
+                t.start()
+                return True
+
+            except IndexError:
+                self._current_goal = None
+                return False
 
 
 def main():
