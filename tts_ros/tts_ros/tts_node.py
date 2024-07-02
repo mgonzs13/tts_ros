@@ -177,51 +177,58 @@ class AudioCapturerNode(Node):
         self._tts_lock.acquire()
         self.get_logger().info("Generating Audio")
 
-        if not self.stream:
-            # create an audio file
-            audio_file = tempfile.NamedTemporaryFile(mode="w+")
-            self.tts.tts_to_file(
-                text,
-                speaker_wav=self.speaker_wav,
-                speaker=self.speaker,
-                language=language,
-                file_path=audio_file.name
-            )
+        try:
+            if not self.stream:
+                # create an audio file
+                audio_file = tempfile.NamedTemporaryFile(mode="w+")
+                self.tts.tts_to_file(
+                    text,
+                    speaker_wav=self.speaker_wav,
+                    speaker=self.speaker,
+                    language=language,
+                    file_path=audio_file.name
+                )
 
-            # read audio chunks
-            audio_file.seek(0)
-            wf = wave.open(audio_file.name, "rb")
-            audio_file.close()
+                # read audio chunks
+                audio_file.seek(0)
+                wf = wave.open(audio_file.name, "rb")
+                audio_file.close()
 
-            audio_format = pyaudio.get_format_from_width(wf.getsampwidth())
-            channels = wf.getnchannels()
-            rate = wf.getframerate()
+                audio_format = pyaudio.get_format_from_width(wf.getsampwidth())
+                channels = wf.getnchannels()
+                rate = wf.getframerate()
 
-            def read_wav_chunks():
-                while True:
-                    frames = wf.readframes(self.chunk)
-                    if not frames:
-                        break
-                    yield frames
+                def read_wav_chunks():
+                    while True:
+                        frames = wf.readframes(self.chunk)
+                        if not frames:
+                            break
+                        yield frames
 
-            chunks = read_wav_chunks()
+                chunks = read_wav_chunks()
 
-        else:
-            # TODO: TTS/tts/layers/xtts/stream_generator.py:138: UserWarning: You have modified the pretrained model configuration to control generation. This is a deprecated strategy to control generation and will be removed soon, in a future version. Please use a generation configuration file (see https://huggingface.co/docs/transformers/main_classes/text_generation)
-            chunks = self.tts.synthesizer.tts_model.inference_stream(
-                text,
-                speaker_wav=self.speaker_wav,
-                speaker=self.speaker,
-                language=language,
-                gpt_cond_latent=self.gpt_cond_latent,
-                speaker_embedding=self.speaker_embedding,
-                stream_chunk_size=self.chunk,
-                temperature=0.65,
-                repetition_penalty=10.0,
-                speed=1.0,
-                enable_text_splitting=True,
-            )
-        self._tts_lock.release()
+            else:
+                # TODO: TTS/tts/layers/xtts/stream_generator.py:138: UserWarning: You have modified the pretrained model configuration to control generation. This is a deprecated strategy to control generation and will be removed soon, in a future version. Please use a generation configuration file (see https://huggingface.co/docs/transformers/main_classes/text_generation)
+                chunks = self.tts.synthesizer.tts_model.inference_stream(
+                    text,
+                    speaker_wav=self.speaker_wav,
+                    speaker=self.speaker,
+                    language=language,
+                    gpt_cond_latent=self.gpt_cond_latent,
+                    speaker_embedding=self.speaker_embedding,
+                    stream_chunk_size=self.chunk,
+                    temperature=0.65,
+                    repetition_penalty=10.0,
+                    speed=1.0,
+                    enable_text_splitting=True,
+                )
+
+        except:
+            goal_handle.abort()
+            return TTS.Result()
+
+        finally:
+            self._tts_lock.release()
 
         # pub audio chunks
         try:
