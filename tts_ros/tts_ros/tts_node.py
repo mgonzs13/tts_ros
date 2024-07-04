@@ -43,6 +43,7 @@ from rclpy.executors import MultiThreadedExecutor
 from audio_common_msgs.msg import AudioStamped
 from audio_common_msgs.action import TTS
 from audio_common.utils import data_to_msg
+from audio_common.utils import get_msg_chunk
 
 
 class AudioCapturerNode(Node):
@@ -272,7 +273,7 @@ class AudioCapturerNode(Node):
                     msg.header.stamp = self.get_clock().now().to_msg()
                     msg.audio = audio_msg
                     msg.audio.info.channels = channels
-                    msg.audio.info.chunk = self.chunk
+                    msg.audio.info.chunk = get_msg_chunk(audio_msg)
                     msg.audio.info.rate = rate
 
                     if not goal_handle.is_active:
