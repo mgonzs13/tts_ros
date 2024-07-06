@@ -233,7 +233,9 @@ class AudioCapturerNode(Node):
                     enable_text_splitting=True,
                 )
 
-        except:
+        except Exception as e:
+            self.get_logger().error(
+                f"Exception '{e}' when processing text '{text}'")
             goal_handle.abort()
             self.run_next_goal()
             return TTS.Result()
