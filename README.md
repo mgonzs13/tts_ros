@@ -1,6 +1,6 @@
 # tts_ros
 
-This repositiory integrates the Python [TTS](https://pypi.org/project/TTS/) (Text-to-Speech) pacakge into ROS 2 using [audio_common](https://github.com/mgonzs13/audio_common).
+This repositiory integrates the Python [TTS](https://pypi.org/project/TTS/) (Text-to-Speech) pacakge into ROS 2 using [audio_common](https://github.com/mgonzs13/audio_common) [4.0.0](https://github.com/mgonzs13/audio_common/releases/tag/4.0.0).
 
 ## Installation
 
@@ -8,8 +8,6 @@ This repositiory integrates the Python [TTS](https://pypi.org/project/TTS/) (Tex
 $ cd ~/ros2_ws/src
 $ git clone https://github.com/mgonzs13/audio_common.git
 $ git clone https://github.com/mgonzs13/tts_ros.git
-$ sudo apt install portaudio19-dev
-$ pip3 install -r audio_common/requirements.txt
 $ pip3 install -r tts_ros/requirements.txt
 $ cd ~/ros2_ws
 $ rosdep install --from-paths src --ignore-src -r -y

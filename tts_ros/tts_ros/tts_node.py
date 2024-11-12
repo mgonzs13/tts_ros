@@ -40,10 +40,11 @@ from rclpy.action.server import ServerGoalHandle
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 
+from audio_common_msgs.msg import Audio
 from audio_common_msgs.msg import AudioStamped
 from audio_common_msgs.action import TTS
-from audio_common.utils import data_to_msg
-from audio_common.utils import get_msg_chunk
+from tts_ros.utils import data_to_msg
+from tts_ros.utils import get_msg_chunk
 
 
 class AudioCapturerNode(Node):
@@ -51,61 +52,53 @@ class AudioCapturerNode(Node):
     def __init__(self) -> None:
         super().__init__("tts_node")
 
-        self.declare_parameters("", [
-            ("chunk", 4096),
-            ("frame_id", ""),
+        self.declare_parameters(
+            "",
+            [
+                ("chunk", 4096),
+                ("frame_id", ""),
+                ("model", "tts_models/en/ljspeech/vits"),
+                ("model_path", ""),
+                ("config_path", ""),
+                ("vocoder_path", ""),
+                ("vocoder_config_path", ""),
+                ("device", "cpu"),
+                ("speaker_wav", ""),
+                ("speaker", ""),
+                ("stream", False),
+            ],
+        )
 
-            ("model", "tts_models/en/ljspeech/vits"),
-            ("model_path", ""),
-            ("config_path", ""),
-            ("vocoder_path", ""),
-            ("vocoder_config_path", ""),
-            ("device", "cpu"),
+        self.chunk = self.get_parameter("chunk").get_parameter_value().integer_value
+        self.frame_id = self.get_parameter("frame_id").get_parameter_value().string_value
 
-            ("speaker_wav", ""),
-            ("speaker", ""),
-            ("stream", False),
-        ])
+        model = self.get_parameter("model").get_parameter_value().string_value
+        model_path = self.get_parameter("model_path").get_parameter_value().string_value
+        config_path = self.get_parameter("config_path").get_parameter_value().string_value
+        vocoder_path = (
+            self.get_parameter("vocoder_path").get_parameter_value().string_value
+        )
+        vocoder_config_path = (
+            self.get_parameter("vocoder_config_path").get_parameter_value().string_value
+        )
 
-        self.chunk = self.get_parameter(
-            "chunk").get_parameter_value().integer_value
-        self.frame_id = self.get_parameter(
-            "frame_id").get_parameter_value().string_value
-
-        model = self.get_parameter(
-            "model").get_parameter_value().string_value
-        model_path = self.get_parameter(
-            "model_path").get_parameter_value().string_value
-        config_path = self.get_parameter(
-            "config_path").get_parameter_value().string_value
-        vocoder_path = self.get_parameter(
-            "vocoder_path").get_parameter_value().string_value
-        vocoder_config_path = self.get_parameter(
-            "vocoder_config_path").get_parameter_value().string_value
-
-        self.speaker_wav = self.get_parameter(
-            "speaker_wav").get_parameter_value().string_value
-        self.speaker = self.get_parameter(
-            "speaker").get_parameter_value().string_value
-        self.device = self.get_parameter(
-            "device").get_parameter_value().string_value
-        self.stream = self.get_parameter(
-            "stream").get_parameter_value().bool_value
+        self.speaker_wav = (
+            self.get_parameter("speaker_wav").get_parameter_value().string_value
+        )
+        self.speaker = self.get_parameter("speaker").get_parameter_value().string_value
+        self.device = self.get_parameter("device").get_parameter_value().string_value
+        self.stream = self.get_parameter("stream").get_parameter_value().bool_value
 
         self.tts = TtsModel(
             model_name=model,
             model_path=model_path,
             config_path=config_path,
             vocoder_path=vocoder_path,
-            vocoder_config_path=vocoder_config_path
+            vocoder_config_path=vocoder_config_path,
         ).to(self.device)
 
-        if (
-            not self.speaker_wav or
-            not (
-                os.path.exists(self.speaker_wav) and
-                os.path.isfile(self.speaker_wav)
-            )
+        if not self.speaker_wav or not (
+            os.path.exists(self.speaker_wav) and os.path.isfile(self.speaker_wav)
         ):
             self.speaker_wav = None
 
@@ -121,7 +114,8 @@ class AudioCapturerNode(Node):
         self._pub_rate = None
         self._pub_lock = threading.Lock()
         self.__player_pub = self.create_publisher(
-            AudioStamped, "audio", qos_profile_sensor_data)
+            AudioStamped, "audio", qos_profile_sensor_data
+        )
 
         # action server
         self._action_server = ActionServer(
@@ -132,16 +126,20 @@ class AudioCapturerNode(Node):
             goal_callback=self.goal_callback,
             handle_accepted_callback=self.handle_accepted_callback,
             cancel_callback=self.cancel_callback,
-            callback_group=ReentrantCallbackGroup()
+            callback_group=ReentrantCallbackGroup(),
         )
 
         self.get_logger().debug(f"Stream: {self.stream} {self.speaker_wav}")
 
         if self.stream and self.speaker_wav:
             self.get_logger().info(
-                f"Streaming. Getting embeddings from {self.speaker_wav}")
-            self.gpt_cond_latent, self.speaker_embedding = self.tts.synthesizer.tts_model.get_conditioning_latents(
-                audio_path=[self.speaker_wav])
+                f"Streaming. Getting embeddings from {self.speaker_wav}"
+            )
+            self.gpt_cond_latent, self.speaker_embedding = (
+                self.tts.synthesizer.tts_model.get_conditioning_latents(
+                    audio_path=[self.speaker_wav]
+                )
+            )
         else:
             self.stream = False
 
@@ -196,7 +194,7 @@ class AudioCapturerNode(Node):
                     speaker_wav=self.speaker_wav,
                     speaker=self.speaker,
                     language=language,
-                    file_path=audio_file.name
+                    file_path=audio_file.name,
                 )
 
                 # read audio chunks
@@ -234,8 +232,7 @@ class AudioCapturerNode(Node):
                 )
 
         except Exception as e:
-            self.get_logger().error(
-                f"Exception '{e}' when processing text '{text}'")
+            self.get_logger().error(f"Exception '{e}' when processing text '{text}'")
             goal_handle.abort()
             self.run_next_goal()
             return TTS.Result()
@@ -254,7 +251,7 @@ class AudioCapturerNode(Node):
                 for j in range(0, len(chunk_data), self.chunk):
 
                     if self.stream:
-                        data = chunk_data[j:j+self.chunk]
+                        data = chunk_data[j : j + self.chunk]
                         data = data.clone().detach().cpu().numpy()
                         data = data[None, : int(data.shape[0])]
                         data = np.clip(data, -1, 1)
@@ -265,8 +262,7 @@ class AudioCapturerNode(Node):
 
                     audio_msg = data_to_msg(data, audio_format)
                     if audio_msg is None:
-                        self.get_logger().error(
-                            f"Format {audio_format} unknown")
+                        self.get_logger().error(f"Format {audio_format} unknown")
                         self._goal_handle.abort()
                         return TTS.Result()
 
