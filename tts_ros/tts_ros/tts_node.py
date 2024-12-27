@@ -47,7 +47,7 @@ from tts_ros.utils import data_to_msg
 from tts_ros.utils import get_msg_chunk
 
 
-class AudioCapturerNode(Node):
+class TtsNode(Node):
 
     def __init__(self) -> None:
         super().__init__("tts_node")
@@ -307,7 +307,7 @@ class AudioCapturerNode(Node):
 
 def main():
     rclpy.init()
-    node = AudioCapturerNode()
+    node = TtsNode()
     executor = MultiThreadedExecutor()
     rclpy.spin(node, executor=executor)
     node.destroy_node()
