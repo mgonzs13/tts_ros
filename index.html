@@ -89,7 +89,7 @@ $(function(){ initResizable(false); });
 <div class="contents">
 <div class="textblock"><p><a class="anchor" id="md_README"></a></p>
 <p>This repositiory integrates the Python <a href="https://pypi.org/project/TTS/">TTS</a> (Text-to-Speech) package into ROS 2 using <a href="https://github.com/mgonzs13/audio_common">audio_common</a> <a href="https://github.com/mgonzs13/audio_common/releases/tag/4.0.3">4.0.3</a>.</p>
-<p><a href="https://opensource.org/license/mit"><img src="https://img.shields.io/badge/GitHub-MIT-informational" alt="License: MIT" class="inline"/></a> <a href="https://github.com/mgonzs13/tts_ros/releases"><img src="https://img.shields.io/github/release/mgonzs13/tts_ros.svg" alt="GitHub release" style="pointer-events: none;" class="inline"/></a> <a href="https://github.com/mgonzs13/tts_ros?branch=main"><img src="https://img.shields.io/github/languages/code-size/mgonzs13/tts_ros.svg?branch=main" alt="Code Size" style="pointer-events: none;" class="inline"/></a> <a href="https://github.com/mgonzs13/tts_ros/commits/main"><img src="https://img.shields.io/github/last-commit/mgonzs13/tts_ros.svg" alt="Last Commit" style="pointer-events: none;" class="inline"/></a> <a href="https://github.com/mgonzs13/tts_ros/issues"><img src="https://img.shields.io/github/issues/mgonzs13/tts_ros" alt="GitHub issues" class="inline"/></a> <a href="https://github.com/mgonzs13/tts_ros/pulls"><img src="https://img.shields.io/github/issues-pr/mgonzs13/tts_ros" alt="GitHub pull requests" class="inline"/></a> <a href="https://github.com/mgonzs13/tts_ros/graphs/contributors"><img src="https://img.shields.io/github/contributors/mgonzs13/tts_ros.svg" alt="Contributors" style="pointer-events: none;" class="inline"/></a> <a href="https://github.com/mgonzs13/tts_ros/actions/workflows/python-formatter.yml?branch=main"><img src="https://github.com/mgonzs13/tts_ros/actions/workflows/python-formatter.yml/badge.svg?branch=main" alt="Python Formatter Check" style="pointer-events: none;" class="inline"/></a> <a href="https://github.com/mgonzs13/tts_ros/actions/workflows/cpp-formatter.yml?branch=main"><img src="https://github.com/mgonzs13/tts_ros/actions/workflows/cpp-formatter.yml/badge.svg?branch=main" alt="C++ Formatter Check" style="pointer-events: none;" class="inline"/></a></p>
+<p><a href="https://opensource.org/license/mit"><img src="https://img.shields.io/badge/GitHub-MIT-informational" alt="License: MIT" class="inline"/></a> <a href="https://github.com/mgonzs13/tts_ros/releases"><img src="https://img.shields.io/github/release/mgonzs13/tts_ros.svg" alt="GitHub release" style="pointer-events: none;" class="inline"/></a> <a href="https://github.com/mgonzs13/tts_ros?branch=main"><img src="https://img.shields.io/github/languages/code-size/mgonzs13/tts_ros.svg?branch=main" alt="Code Size" style="pointer-events: none;" class="inline"/></a> <a href="https://github.com/mgonzs13/tts_ros/commits/main"><img src="https://img.shields.io/github/last-commit/mgonzs13/tts_ros.svg" alt="Last Commit" style="pointer-events: none;" class="inline"/></a> <a href="https://github.com/mgonzs13/tts_ros/issues"><img src="https://img.shields.io/github/issues/mgonzs13/tts_ros" alt="GitHub issues" class="inline"/></a> <a href="https://github.com/mgonzs13/tts_ros/pulls"><img src="https://img.shields.io/github/issues-pr/mgonzs13/tts_ros" alt="GitHub pull requests" class="inline"/></a> <a href="https://github.com/mgonzs13/tts_ros/graphs/contributors"><img src="https://img.shields.io/github/contributors/mgonzs13/tts_ros.svg" alt="Contributors" style="pointer-events: none;" class="inline"/></a> <a href="https://github.com/mgonzs13/tts_ros/actions/workflows/python-formatter.yml?branch=main"><img src="https://github.com/mgonzs13/tts_ros/actions/workflows/python-formatter.yml/badge.svg?branch=main" alt="Python Formatter Check" style="pointer-events: none;" class="inline"/></a></p>
 <div align="center"></div><div align="center"><table class="markdownTable">
 <tr class="markdownTableHead">
 <th class="markdownTableHeadCenter">ROS 2 Distro   </th><th class="markdownTableHeadCenter">Branch   </th><th class="markdownTableHeadCenter">Build status   </th><th class="markdownTableHeadCenter">Docker Image   </th><th class="markdownTableHeadNone">Documentation    </th></tr>
@@ -111,13 +111,13 @@ Table of Contents</h1>
 </ol>
 <h1><a class="anchor" id="autotoc_md2"></a>
 Installation</h1>
-<div class="fragment"><div class="line">$ cd ~/ros2_ws/src</div>
-<div class="line">$ git clone https://github.com/mgonzs13/audio_common.git</div>
-<div class="line">$ git clone https://github.com/mgonzs13/tts_ros.git</div>
-<div class="line">$ pip3 install -r tts_ros/requirements.txt</div>
-<div class="line">$ cd ~/ros2_ws</div>
-<div class="line">$ rosdep install --from-paths src --ignore-src -r -y</div>
-<div class="line">$ colcon build</div>
+<div class="fragment"><div class="line">cd ~/ros2_ws/src</div>
+<div class="line">git clone https://github.com/mgonzs13/audio_common.git</div>
+<div class="line">git clone https://github.com/mgonzs13/tts_ros.git</div>
+<div class="line">pip3 install -r tts_ros/requirements.txt</div>
+<div class="line">cd ~/ros2_ws</div>
+<div class="line">rosdep install --from-paths src --ignore-src -r -y</div>
+<div class="line">colcon build</div>
 </div><!-- fragment --><h1><a class="anchor" id="autotoc_md3"></a>
 Docker</h1>
 <p>You can build the <a class="el" href="namespacetts__ros.html">tts_ros</a> docker:</p>
@@ -141,13 +141,13 @@ Usage</h1>
 <li><code>stream</code>: Whether to stream the audio data.</li>
 </ul>
 <h2><a class="anchor" id="autotoc_md5"></a>
-Format</h2>
-<div class="fragment"><div class="line">$ ros2 run tts_ros tts_node --ros-args -p chunk:=4096 -p frame_id:=&quot;your-frame&quot; -p model:=&quot;your-model&quot; -p device:=&quot;cpu/cuda&quot; -p speaker_wav:=&quot;/path/to/wav/file&quot; -p stream:=False</div>
+Parameters Format</h2>
+<div class="fragment"><div class="line">ros2 run tts_ros tts_node --ros-args -p chunk:=4096 -p frame_id:=&quot;your-frame&quot; -p model:=&quot;your-model&quot; -p device:=&quot;cpu/cuda&quot; -p speaker_wav:=&quot;/path/to/wav/file&quot; -p stream:=False</div>
 </div><!-- fragment --><h1><a class="anchor" id="autotoc_md6"></a>
 Demos</h1>
-<div class="fragment"><div class="line">$ ros2 run tts_ros tts_node</div>
-</div><!-- fragment --><div class="fragment"><div class="line">$ ros2 run audio_common audio_player_node</div>
-</div><!-- fragment --><div class="fragment"><div class="line">$ ros2 action send_goal /say audio_common_msgs/action/TTS &quot;{&#39;text&#39;: &#39;Hello World&#39;}&quot;</div>
+<div class="fragment"><div class="line">ros2 run tts_ros tts_node</div>
+</div><!-- fragment --><div class="fragment"><div class="line">ros2 run audio_common audio_player_node</div>
+</div><!-- fragment --><div class="fragment"><div class="line">ros2 action send_goal /say audio_common_msgs/action/TTS &quot;{&#39;text&#39;: &#39;Hello World&#39;}&quot;</div>
 </div><!-- fragment --> </div></div><!-- PageDoc -->
 <a href="doxygen_crawl.html"></a>
 </div><!-- contents -->
