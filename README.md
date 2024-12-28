@@ -2,7 +2,7 @@
 
 This repositiory integrates the Python [TTS](https://pypi.org/project/TTS/) (Text-to-Speech) package into ROS 2 using [audio_common](https://github.com/mgonzs13/audio_common) [4.0.3](https://github.com/mgonzs13/audio_common/releases/tag/4.0.3).
 
-[![License: MIT](https://img.shields.io/badge/GitHub-MIT-informational)](https://opensource.org/license/mit) [![GitHub release](https://img.shields.io/github/release/mgonzs13/tts_ros.svg)](https://github.com/mgonzs13/tts_ros/releases) [![Code Size](https://img.shields.io/github/languages/code-size/mgonzs13/tts_ros.svg?branch=main)](https://github.com/mgonzs13/tts_ros?branch=main) [![Last Commit](https://img.shields.io/github/last-commit/mgonzs13/tts_ros.svg)](https://github.com/mgonzs13/tts_ros/commits/main) [![GitHub issues](https://img.shields.io/github/issues/mgonzs13/tts_ros)](https://github.com/mgonzs13/tts_ros/issues) [![GitHub pull requests](https://img.shields.io/github/issues-pr/mgonzs13/tts_ros)](https://github.com/mgonzs13/tts_ros/pulls) [![Contributors](https://img.shields.io/github/contributors/mgonzs13/tts_ros.svg)](https://github.com/mgonzs13/tts_ros/graphs/contributors) [![Python Formatter Check](https://github.com/mgonzs13/tts_ros/actions/workflows/python-formatter.yml/badge.svg?branch=main)](https://github.com/mgonzs13/tts_ros/actions/workflows/python-formatter.yml?branch=main) [![C++ Formatter Check](https://github.com/mgonzs13/tts_ros/actions/workflows/cpp-formatter.yml/badge.svg?branch=main)](https://github.com/mgonzs13/tts_ros/actions/workflows/cpp-formatter.yml?branch=main)
+[![License: MIT](https://img.shields.io/badge/GitHub-MIT-informational)](https://opensource.org/license/mit) [![GitHub release](https://img.shields.io/github/release/mgonzs13/tts_ros.svg)](https://github.com/mgonzs13/tts_ros/releases) [![Code Size](https://img.shields.io/github/languages/code-size/mgonzs13/tts_ros.svg?branch=main)](https://github.com/mgonzs13/tts_ros?branch=main) [![Last Commit](https://img.shields.io/github/last-commit/mgonzs13/tts_ros.svg)](https://github.com/mgonzs13/tts_ros/commits/main) [![GitHub issues](https://img.shields.io/github/issues/mgonzs13/tts_ros)](https://github.com/mgonzs13/tts_ros/issues) [![GitHub pull requests](https://img.shields.io/github/issues-pr/mgonzs13/tts_ros)](https://github.com/mgonzs13/tts_ros/pulls) [![Contributors](https://img.shields.io/github/contributors/mgonzs13/tts_ros.svg)](https://github.com/mgonzs13/tts_ros/graphs/contributors) [![Python Formatter Check](https://github.com/mgonzs13/tts_ros/actions/workflows/python-formatter.yml/badge.svg?branch=main)](https://github.com/mgonzs13/tts_ros/actions/workflows/python-formatter.yml?branch=main)
 
 <div align="center">
 
@@ -24,13 +24,13 @@ This repositiory integrates the Python [TTS](https://pypi.org/project/TTS/) (Tex
 ## Installation
 
 ```shell
-$ cd ~/ros2_ws/src
-$ git clone https://github.com/mgonzs13/audio_common.git
-$ git clone https://github.com/mgonzs13/tts_ros.git
-$ pip3 install -r tts_ros/requirements.txt
-$ cd ~/ros2_ws
-$ rosdep install --from-paths src --ignore-src -r -y
-$ colcon build
+cd ~/ros2_ws/src
+git clone https://github.com/mgonzs13/audio_common.git
+git clone https://github.com/mgonzs13/tts_ros.git
+pip3 install -r tts_ros/requirements.txt
+cd ~/ros2_ws
+rosdep install --from-paths src --ignore-src -r -y
+colcon build
 ```
 
 ## Docker
@@ -63,22 +63,22 @@ To use this tool you have to run the tts_node. It has the following parameters:
 - `speaker`: Which speaker voice to use for multi-speaker models. Check with `tts --model_name <model> --list_language_idx`.
 - `stream`: Whether to stream the audio data.
 
-### Format
+### Parameters Format
 
 ```shell
-$ ros2 run tts_ros tts_node --ros-args -p chunk:=4096 -p frame_id:="your-frame" -p model:="your-model" -p device:="cpu/cuda" -p speaker_wav:="/path/to/wav/file" -p stream:=False
+ros2 run tts_ros tts_node --ros-args -p chunk:=4096 -p frame_id:="your-frame" -p model:="your-model" -p device:="cpu/cuda" -p speaker_wav:="/path/to/wav/file" -p stream:=False
 ```
 
 ## Demos
 
 ```shell
-$ ros2 run tts_ros tts_node
+ros2 run tts_ros tts_node
 ```
 
 ```shell
-$ ros2 run audio_common audio_player_node
+ros2 run audio_common audio_player_node
 ```
 
 ```shell
-$ ros2 action send_goal /say audio_common_msgs/action/TTS "{'text': 'Hello World'}"
+ros2 action send_goal /say audio_common_msgs/action/TTS "{'text': 'Hello World'}"
 ```
