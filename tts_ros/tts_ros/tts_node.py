@@ -274,6 +274,9 @@ class TtsNode(Node):
                     msg.audio.info.chunk = get_msg_chunk(audio_msg)
                     msg.audio.info.rate = rate
 
+                    feedback = TTS.Feedback()
+                    feedback.audio = msg
+
                     if not goal_handle.is_active:
                         return TTS.Result()
 
@@ -282,6 +285,7 @@ class TtsNode(Node):
                         return TTS.Result()
 
                     self.__player_pub.publish(msg)
+                    goal_handle.publish_feedback(feedback)
                     self._pub_rate.sleep()
 
                     if not self.stream:
