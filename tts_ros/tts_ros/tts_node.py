@@ -215,19 +215,11 @@ class TtsNode(Node):
                 chunks = read_wav_chunks()
 
             else:
-                # TODO: TTS/tts/layers/xtts/stream_generator.py:138: UserWarning: You have modified the pretrained model configuration to control generation. This is a deprecated strategy to control generation and will be removed soon, in a future version. Please use a generation configuration file (see https://huggingface.co/docs/transformers/main_classes/text_generation)
                 chunks = self.tts.synthesizer.tts_model.inference_stream(
                     text,
-                    speaker_wav=self.speaker_wav,
-                    speaker=self.speaker,
-                    language=language,
-                    gpt_cond_latent=self.gpt_cond_latent,
-                    speaker_embedding=self.speaker_embedding,
-                    stream_chunk_size=self.chunk,
-                    temperature=0.65,
-                    repetition_penalty=10.0,
-                    speed=1.0,
-                    enable_text_splitting=True,
+                    language,
+                    self.gpt_cond_latent,
+                    self.speaker_embedding,
                 )
 
         except Exception as e:
