@@ -40,7 +40,6 @@ from rclpy.action.server import ServerGoalHandle
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 
-from audio_common_msgs.msg import Audio
 from audio_common_msgs.msg import AudioStamped
 from audio_common_msgs.action import TTS
 from tts_ros.utils import data_to_msg
@@ -284,6 +283,7 @@ class TtsNode(Node):
                         goal_handle.canceled()
                         return TTS.Result()
 
+                    self.get_logger().debug("Publishing Audio Chunk")
                     self.__player_pub.publish(msg)
                     goal_handle.publish_feedback(feedback)
                     self._pub_rate.sleep()

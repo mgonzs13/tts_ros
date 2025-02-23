@@ -1,2 +1,2 @@
-coqui-tts==0.25.1
+coqui-tts==0.25.3
 pyaudio==0.2.14
