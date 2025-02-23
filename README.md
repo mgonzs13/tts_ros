@@ -69,16 +69,22 @@ To use this tool you have to run the tts_node. It has the following parameters:
 ros2 run tts_ros tts_node --ros-args -p chunk:=4096 -p frame_id:="your-frame" -p model:="your-model" -p device:="cpu/cuda" -p speaker_wav:="/path/to/wav/file" -p stream:=False
 ```
 
-## Demos
+## Demo
 
 ```shell
-ros2 run tts_ros tts_node
-```
-
-```shell
-ros2 run audio_common audio_player_node
+ros2 launch tts_bringup tts.launch.py device:="cuda"
 ```
 
 ```shell
 ros2 action send_goal /say audio_common_msgs/action/TTS "{'text': 'Hello World'}"
+```
+
+## Streaming Demo
+
+```shell
+ros2 launch tts_bringup tts.launch.py stream:=True model:="tts_models/multilingual/multi-dataset/xtts_v2" speaker_wav:="/home/miguel/Downloads/question_1.wav"  device:="cuda"
+```
+
+```shell
+ros2 action send_goal /say audio_common_msgs/action/TTS "{'text': 'Hello World, How are you? Can you hear me? What is your favorite color? Do you know the Robot Operating System?'}"
 ```
