@@ -19,7 +19,7 @@ RUN rosdep update --include-eol-distros && rosdep install --from-paths src --ign
 RUN rosdep install --from-paths src --ignore-src -r -y
 
 RUN if [ "$ROS_DISTRO" = "jazzy" ] || [ "$ROS_DISTRO" = "rolling" ]; then \
-    pip3 install -r src/requirements.txt --break-system-packages; \
+    pip3 install -r src/requirements.txt --break-system-packages --ignore-installed; \
     else \
     pip3 install -r src/requirements.txt; \
     fi
