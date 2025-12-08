@@ -30,6 +30,8 @@ RUN if [ "$ROS_DISTRO" = "jazzy" ] || [ "$ROS_DISTRO" = "rolling" ]; then \
 
 FROM deps AS builder
 
+SHELL ["/bin/bash", "-c"]
+
 # Build the workspace
 RUN source /opt/ros/${ROS_DISTRO}/setup.bash && colcon build
 
