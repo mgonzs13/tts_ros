@@ -1,5 +1,5 @@
 ARG ROS_DISTRO=humble
-FROM ros:${ROS_DISTRO} AS deps
+FROM ros:${ROS_DISTRO}-ros-core AS deps
 
 # Create ros2_ws and copy files
 WORKDIR /root/ros2_ws
