@@ -19,7 +19,7 @@ RUN git clone https://github.com/mgonzs13/audio_common.git /root/ros2_ws/src/aud
 
 # Install ROS dependencies
 RUN rosdep init && rosdep update --include-eol-distros
-RUN rosdep install --from-paths src --ignore-src -r -y
+RUN apt update && rosdep install --from-paths src --ignore-src -r -y
 
 # Install Python packages
 RUN if [ "$ROS_DISTRO" = "jazzy" ] || [ "$ROS_DISTRO" = "rolling" ]; then \
